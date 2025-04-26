@@ -39,7 +39,7 @@ def export_issues(body: JQLRequest):
                 'jql': jql,
                 'startAt': start_at,
                 'maxResults': max_results,
-                'fields': 'project,key,issuetype,status,assignee,reporter,created,resolutiondate,customfield_10680,customfield_10767,customfield_10010',
+                'fields': 'project,key,issuetype,status,assignee,reporter,created,resolutiondate,customfield_10680,customfield_10767,customfield_10010,customfield_10790',
                 'expand': 'changelog'
             }
             response = requests.get(BASE_URL, headers=HEADERS, auth=AUTH, params=params)
@@ -90,6 +90,9 @@ def export_issues(body: JQLRequest):
                 'Tipo de Requisição': get_nested_value(issue['fields'], 'customfield_10680'),
                 'Grupo Solucionador': get_nested_value(issue['fields'], 'customfield_10767.value'),
                 'Request Type': get_nested_value(issue['fields'], 'customfield_10010.requestType.name'),
+                'Garagens': ', '.join(
+                    [item.get('label', 'N/A') for item in issue['fields'].get('customfield_10790', [])]
+                ),
             }
             for issue in issues_list
         ])
