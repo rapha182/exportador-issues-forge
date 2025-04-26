@@ -6,6 +6,7 @@ import os
 
 app = FastAPI()
 
+# Configurações
 BASE_URL = "https://estaparjsm.atlassian.net/rest/api/3/search"
 AUTH = (os.getenv("JIRA_EMAIL"), os.getenv("JIRA_TOKEN"))
 HEADERS = {
@@ -66,10 +67,11 @@ def export_issues(body: JQLRequest):
                 resolved_date = None
                 for history in issue.get('changelog', {}).get('histories', []):
                     for item in history.get('items', []):
-                        if item['field'] == 'status' and item['toString'] == 'Resolvido':
-                            resolved_date = history['created']
+                        if item.get('field') == 'status' and item.get('toString') == 'Resolvido':
+                            resolved_date = history.get('created')
                 if resolved_date:
-                    issue['fields']['resolvedDate'] = resolved_date
+                    if 'fields' in issue:
+                        issue['fields']['resolvedDate'] = resolved_date
                 issues_list.append(issue)
 
             start_at += len(issues)
@@ -79,24 +81,25 @@ def export_issues(body: JQLRequest):
 
         df_issues = pd.DataFrame([
             {
-                'Projeto': issue['fields']['project']['name'],
-                'Issue Key': issue['key'],
-                'Issue Type': issue['fields']['issuetype']['name'],
-                'Status': issue['fields']['status']['name'],
-                'Assignee': issue['fields'].get('assignee', {}).get('displayName', 'Unassigned'),
-                'Reporter': issue['fields'].get('reporter', {}).get('displayName', 'Unknown'),
-                'Created Date': issue['fields']['created'],
-                'Resolved Date': issue['fields'].get('resolvedDate', 'Not resolved'),
-                'Tipo de Requisição': get_nested_value(issue['fields'], 'customfield_10680'),
-                'Grupo Solucionador': get_nested_value(issue['fields'], 'customfield_10767.value'),
-                'Request Type': get_nested_value(issue['fields'], 'customfield_10010.requestType.name'),
+                'Projeto': issue.get('fields', {}).get('project', {}).get('name', 'Unknown Project'),
+                'Issue Key': issue.get('key', 'Unknown Key'),
+                'Issue Type': issue.get('fields', {}).get('issuetype', {}).get('name', 'Unknown Type'),
+                'Status': issue.get('fields', {}).get('status', {}).get('name', 'Unknown Status'),
+                'Assignee': issue.get('fields', {}).get('assignee', {}).get('displayName', 'Unassigned'),
+                'Reporter': issue.get('fields', {}).get('reporter', {}).get('displayName', 'Unknown'),
+                'Created Date': issue.get('fields', {}).get('created', 'Unknown Date'),
+                'Resolved Date': issue.get('fields', {}).get('resolvedDate', 'Not resolved'),
+                'Tipo de Requisição': get_nested_value(issue.get('fields', {}), 'customfield_10680'),
+                'Grupo Solucionador': get_nested_value(issue.get('fields', {}), 'customfield_10767.value'),
+                'Request Type': get_nested_value(issue.get('fields', {}), 'customfield_10010.requestType.name'),
                 'Garagens': ', '.join(
-    [item.get('label', 'N/A') for item in (issue['fields'].get('customfield_10790') or [])]
-),
+                    [item.get('label', 'N/A') for item in (issue.get('fields', {}).get('customfield_10790') or [])]
+                ),
             }
             for issue in issues_list
         ])
 
+        # Ajustes de datas
         df_issues['Created Date'] = pd.to_datetime(df_issues['Created Date'], errors='coerce').dt.strftime('%d/%m/%Y %H:%M')
         df_issues['Resolved Date'] = pd.to_datetime(df_issues['Resolved Date'], errors='coerce').dt.strftime('%d/%m/%Y %H:%M')
 
