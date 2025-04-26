@@ -91,8 +91,8 @@ def export_issues(body: JQLRequest):
                 'Grupo Solucionador': get_nested_value(issue['fields'], 'customfield_10767.value'),
                 'Request Type': get_nested_value(issue['fields'], 'customfield_10010.requestType.name'),
                 'Garagens': ', '.join(
-                    [item.get('label', 'N/A') for item in issue['fields'].get('customfield_10790', [])]
-                ),
+    [item.get('label', 'N/A') for item in (issue['fields'].get('customfield_10790') or [])]
+),
             }
             for issue in issues_list
         ])
