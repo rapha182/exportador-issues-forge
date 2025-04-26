@@ -1,7 +1,9 @@
+
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import requests
 import pandas as pd
+import os
 
 app = FastAPI()
 
