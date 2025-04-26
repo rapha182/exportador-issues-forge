@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import requests
@@ -9,7 +8,7 @@ app = FastAPI()
 
 # Credenciais fixas
 BASE_URL = "https://estaparjsm.atlassian.net/rest/api/3/search"
-auth = (os.getenv("JIRA_EMAIL"), os.getenv("JIRA_TOKEN"))
+AUTH = (os.getenv("JIRA_EMAIL"), os.getenv("JIRA_TOKEN"))
 HEADERS = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
@@ -44,6 +43,14 @@ def export_issues(body: JQLRequest):
             'expand': 'changelog'
         }
         response = requests.get(BASE_URL, headers=HEADERS, auth=AUTH, params=params)
+
+        # 🔵 NOVO TRATAMENTO DE ERRO
+        if not response.ok:
+            return {
+                "error_status": response.status_code,
+                "error_message": response.text
+            }
+
         data = response.json()
         issues = data.get('issues', [])
         if not issues:
