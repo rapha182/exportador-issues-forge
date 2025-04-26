@@ -42,16 +42,20 @@ def export_issues(body: JQLRequest):
             'fields': 'project,key,issuetype,status,assignee,reporter,created,resolutiondate,customfield_10680,customfield_10767,customfield_10010',
             'expand': 'changelog'
         }
-        response = requests.get(BASE_URL, headers=HEADERS, auth=AUTH, params=params)
+        try:
+            response = requests.get(BASE_URL, headers=HEADERS, auth=AUTH, params=params)
 
-        # 🔵 NOVO TRATAMENTO DE ERRO
-        if not response.ok:
-            return {
-                "error_status": response.status_code,
-                "error_message": response.text
-            }
+            if not response.ok:
+                return {
+                    "status_code": response.status_code,
+                    "error_text": response.text
+                }
 
-        data = response.json()
+            data = response.json()
+
+        except Exception as e:
+            return {"error": str(e)}
+
         issues = data.get('issues', [])
         if not issues:
             break
