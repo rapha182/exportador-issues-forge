@@ -50,11 +50,18 @@ def export_issues(body: JQLRequest):
                     "error_text": response.text
                 }
 
-            data = response.json()
+            try:
+                data = response.json()
+            except Exception:
+                return {"error": "Response from Jira is not a valid JSON"}
+
+            if not isinstance(data, dict):
+                return {"error": "Response JSON is not a dictionary"}
 
             issues = data.get('issues', [])
             if not issues:
                 break
+
             for issue in issues:
                 resolved_date = None
                 for history in issue.get('changelog', {}).get('histories', []):
@@ -64,9 +71,12 @@ def export_issues(body: JQLRequest):
                 if resolved_date:
                     issue['fields']['resolvedDate'] = resolved_date
                 issues_list.append(issue)
+
             start_at += len(issues)
 
-        # Montar DataFrame
+        if not issues_list:
+            return {"message": "No issues found for the given JQL."}
+
         df_issues = pd.DataFrame([
             {
                 'Projeto': issue['fields']['project']['name'],
@@ -84,7 +94,6 @@ def export_issues(body: JQLRequest):
             for issue in issues_list
         ])
 
-        # Conversão de datas
         df_issues['Created Date'] = pd.to_datetime(df_issues['Created Date'], errors='coerce').dt.strftime('%d/%m/%Y %H:%M')
         df_issues['Resolved Date'] = pd.to_datetime(df_issues['Resolved Date'], errors='coerce').dt.strftime('%d/%m/%Y %H:%M')
 
@@ -93,6 +102,6 @@ def export_issues(body: JQLRequest):
             "total_issues": len(df_issues),
             "preview": preview
         }
-    
+
     except Exception as e:
         return {"error": str(e)}
